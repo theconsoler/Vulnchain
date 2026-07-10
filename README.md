@@ -5,3 +5,4 @@ cat > .env.example << 'ENDOFFILE'
 SECRET_KEY=
 JWT_SECRET_KEY=
 NVD_API_KEY=
+# vulchain
