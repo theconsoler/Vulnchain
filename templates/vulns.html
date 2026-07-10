@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Vulnerabilities{% endblock %}
+{% block page_title %}Prioritized Vulnerabilities{% endblock %}
+{% block content %}
+<div class="filters">
+  <select id="severityFilter" onchange="applyFilters()">
+    <option value="">All Severities</option>
+    <option value="critical">Critical</option>
+    <option value="high">High</option>
+    <option value="medium">Medium</option>
+    <option value="low">Low</option>
+  </select>
+  <select id="exploitFilter" onchange="applyFilters()">
+    <option value="">All</option>
+    <option value="true">Exploit Confirmed Only</option>
+  </select>
+  <span id="vulnCount" style="color:#8b949e;font-size:12px;margin-left:auto;"></span>
+</div>
+<table class="data-table" id="vulnTable">
+  <thead>
+    <tr>
+      <th>#</th><th>Host</th><th>Role</th><th>Vulnerability</th>
+      <th>Severity</th><th>CVSS</th><th>EPSS</th><th>Score</th><th>Flags</th>
+    </tr>
+  </thead>
+  <tbody id="vulnBody">
+    <tr><td colspan="9" style="text-align:center;color:#484f58;padding:30px;">Loading...</td></tr>
+  </tbody>
+</table>
+<script>
+  let currentPage=1,totalPages=1,allFilters={};
+  function badge(s){const m={critical:"badge-critical",high:"badge-high",medium:"badge-medium",low:"badge-low"};return'<span class="badge '+(m[s]||"badge-info")+'">'+s+'</span>';}
+  function renderVulns(data){
+    const vulns=data.data;totalPages=data.pages;currentPage=data.page;
+    document.getElementById("vulnCount").textContent=data.total+" vulnerabilities -- Page "+data.page+" of "+data.pages;
+    const tbody=document.getElementById("vulnBody");
+    if(!vulns.length){tbody.innerHTML='<tr><td colspan="9" style="text-align:center;color:#484f58;padding:30px;">No vulnerabilities found.</td></tr>';renderPagination();return;}
+    tbody.innerHTML=vulns.map(v=>'<tr><td style="color:#58a6ff;font-weight:bold;">'+v.rank+'</td><td><span class="mono" style="color:#58a6ff;">'+v.host_ip+'</span>'+(v.hostname?'<br><span style="font-size:10px;color:#484f58;">'+v.hostname+'</span>':'')+'</td><td><span style="font-size:11px;color:#8b949e;">'+v.role+'</span></td><td>'+v.title+'</td><td>'+badge(v.severity)+'</td><td class="mono">'+(v.cvss||"N/A")+'</td><td class="mono '+((v.epss_score||0)>=0.5?"text-danger":(v.epss_score||0)>=0.1?"text-warning":"text-success")+'">'+(v.epss_score||0).toFixed(4)+'</td><td class="mono text-warning">'+(v.vuln_score||0).toFixed(4)+'</td><td>'+(v.has_exploit?'<span class="badge badge-critical">EXPLOIT</span>':'')+(v.on_attack_path?'<span class="badge badge-high">PATH</span>':'')+'</td></tr>').join("");
+    renderPagination();
+  }
+  function renderPagination(){
+    let el=document.getElementById("pagination");
+    if(!el){el=document.createElement("div");el.id="pagination";el.style.cssText="display:flex;gap:8px;margin-top:16px;align-items:center;";document.getElementById("vulnTable").after(el);}
+    el.innerHTML='<button class="btn-secondary" onclick="loadPage('+(currentPage-1)+')" '+(currentPage<=1?"disabled":"")+'>Prev</button><span style="color:#8b949e;font-size:12px;">Page '+currentPage+' of '+totalPages+'</span><button class="btn-secondary" onclick="loadPage('+(currentPage+1)+')" '+(currentPage>=totalPages?"disabled":"")+'>Next</button>';
+  }
+  function loadPage(page){
+    if(page<1||page>totalPages)return;
+    const p=new URLSearchParams({page,per_page:50,...allFilters});
+    fetch("/api/vulns?"+p).then(r=>r.json()).then(renderVulns).catch(()=>{
+      document.getElementById("vulnBody").innerHTML='<tr><td colspan="9" style="text-align:center;color:#484f58;padding:30px;">No scan data. <a href="/upload" style="color:#58a6ff;">Run a scan first.</a></td></tr>';
+    });
+  }
+  function applyFilters(){
+    allFilters={};
+    const sev=document.getElementById("severityFilter").value;
+    const exp=document.getElementById("exploitFilter").value;
+    if(sev)allFilters.severity=sev;
+    if(exp==="true")allFilters.exploit="true";
+    loadPage(1);
+  }
+  loadPage(1);
+</script>
+{% endblock %}

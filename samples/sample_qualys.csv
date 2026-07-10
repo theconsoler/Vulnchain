@@ -1,0 +1,3 @@
+IP,DNS,QID,Title,Severity,Port,Protocol,CVE ID,CVSS Base,THREAT,SOLUTION
+172.16.0.20,webserver.local,38173,OpenSSL Vulnerability,4,443,tcp,"CVE-2022-0778",7.5,Remote code execution possible,Upgrade OpenSSL to latest version.
+172.16.0.20,webserver.local,6,DNS Host Name,1,53,udp,,0.0,Host resolves to name,Informational only.

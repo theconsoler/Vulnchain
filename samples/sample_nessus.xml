@@ -1,0 +1,17 @@
+<?xml version="1.0" ?>
+<NessusClientData_v2>
+  <Report name="TestScan">
+    <ReportHost name="192.168.1.10">
+      <HostProperties>
+        <tag name="host-fqdn">testhost.local</tag>
+      </HostProperties>
+      <ReportItem port="443" svc_name="https" protocol="tcp" severity="3"
+                  pluginID="51192" pluginName="SSL Certificate Cannot Be Trusted">
+        <cve>CVE-2021-34527</cve>
+        <cvss_base_score>7.5</cvss_base_score>
+        <description>The SSL certificate cannot be trusted.</description>
+        <solution>Purchase or generate a proper SSL certificate.</solution>
+      </ReportItem>
+    </ReportHost>
+  </Report>
+</NessusClientData_v2>

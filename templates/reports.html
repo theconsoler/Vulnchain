@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+{% block page_title %}Report Downloads{% endblock %}
+{% block content %}
+<div class="report-cards">
+  <div class="report-card">
+    <div class="report-icon">&#9783;</div>
+    <div class="report-title">HTML Report</div>
+    <div class="report-sub">Interactive vulnerability report with full remediation table and scoring breakdown.</div>
+    {% if html_exists %}
+    <a href="/api/download/html" class="btn-primary">Download HTML</a>
+    {% else %}
+    <button class="btn-disabled" disabled>Not Generated</button>
+    {% endif %}
+  </div>
+  <div class="report-card">
+    <div class="report-icon">&#128196;</div>
+    <div class="report-title">PDF Report</div>
+    <div class="report-sub">Print-ready PDF version of the full report. Suitable for client delivery.</div>
+    {% if pdf_exists %}
+    <a href="/api/download/pdf" class="btn-primary">Download PDF</a>
+    {% else %}
+    <button class="btn-disabled" disabled>Not Generated</button>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

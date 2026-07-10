@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Run Scan{% endblock %}
+{% block page_title %}Upload Scanner File{% endblock %}
+{% block content %}
+<div class="upload-zone" id="uploadZone">
+  <div class="upload-icon">&#8679;</div>
+  <div class="upload-title">Drop scanner file here</div>
+  <div class="upload-sub">Supports .nessus .xml .csv -- max 50MB</div>
+  <input type="file" id="fileInput" accept=".nessus,.xml,.csv" style="display:none" onchange="handleFile(this.files[0])">
+  <button class="btn-primary" onclick="document.getElementById('fileInput').click()">Choose File</button>
+</div>
+<div id="selectedFile" style="display:none;margin-top:20px;">
+  <div class="upload-selected">
+    <span id="fileName"></span>
+    <button class="btn-run" onclick="runPipeline()">Run VulnChain Pipeline</button>
+  </div>
+</div>
+<div id="progressBox" style="display:none;margin-top:20px;">
+  <div class="progress-title">Running Pipeline...</div>
+  <div class="progress-steps">
+    <div class="progress-step" id="s1">[ ] Phase 1 -- Parsing scanner file</div>
+    <div class="progress-step" id="s2">[ ] Phase 2 -- Building topology graph</div>
+    <div class="progress-step" id="s3">[ ] Phase 3 -- Enriching with NVD + EPSS</div>
+    <div class="progress-step" id="s4">[ ] Phase 4 -- Scoring attack paths</div>
+    <div class="progress-step" id="s5">[ ] Phase 5 -- Generating reports</div>
+  </div>
+</div>
+<div id="resultBox" style="display:none;"></div>
+<script>
+  let selectedFile = null;
+  let pollInterval = null;
+  function handleFile(file) {
+    if (!file) return;
+    selectedFile = file;
+    document.getElementById("fileName").textContent = file.name;
+    document.getElementById("selectedFile").style.display = "block";
+  }
+  const dz = document.getElementById("uploadZone");
+  dz.addEventListener("dragover",  e => { e.preventDefault(); dz.classList.add("dragover"); });
+  dz.addEventListener("dragleave", () => dz.classList.remove("dragover"));
+  dz.addEventListener("drop", e => { e.preventDefault(); dz.classList.remove("dragover"); handleFile(e.dataTransfer.files[0]); });
+  const PL = ["","Phase 1 -- Parsing scanner file","Phase 2 -- Building topology graph","Phase 3 -- Enriching with NVD + EPSS","Phase 4 -- Scoring attack paths","Phase 5 -- Generating reports"];
+  function updateUI(phase) {
+    ["s1","s2","s3","s4","s5"].forEach((id,i) => {
+      const idx = i+1;
+      const el  = document.getElementById(id);
+      if (idx < phase) el.textContent = "[+] "+PL[idx];
+      else if (idx === phase) el.textContent = "[*] "+PL[idx];
+      else el.textContent = "[ ] "+PL[idx];
+    });
+  }
+  function pollJob(jobId) {
+    pollInterval = setInterval(async () => {
+      try {
+        const d = await (await fetch("/api/job/"+jobId)).json();
+        updateUI(d.phase||1);
+        if (d.status==="complete") { clearInterval(pollInterval); showResult(d); }
+        else if (d.status==="error") { clearInterval(pollInterval); showError(d.error_msg||"Failed."); }
+      } catch {}
+    }, 3000);
+  }
+  async function runPipeline() {
+    if (!selectedFile) return;
+    const fd = new FormData();
+    fd.append("file", selectedFile);
+    document.getElementById("selectedFile").style.display = "none";
+    document.getElementById("progressBox").style.display  = "block";
+    document.getElementById("resultBox").style.display    = "none";
+    updateUI(1);
+    try {
+      const r = await fetch("/api/upload", {method:"POST", body:fd});
+      const d = await r.json();
+      if (!r.ok) { showError(d.error||"Upload failed."); return; }
+      pollJob(d.job_id);
+    } catch(e) { showError("Connection error: "+e); }
+  }
+  function showResult(d) {
+    updateUI(6);
+    document.getElementById("resultBox").style.display = "block";
+    document.getElementById("resultBox").innerHTML = '<div class="result-success"><div class="result-title">Pipeline Complete</div><div class="result-grid"><div class="result-stat"><span>'+d.vuln_count+'</span>Vulnerabilities</div><div class="result-stat"><span>'+d.node_count+'</span>Hosts</div><div class="result-stat"><span>'+d.path_count+'</span>Attack Paths</div></div><div class="result-links"><a href="/graph" class="btn-primary">View Attack Graph</a><a href="/vulnerabilities" class="btn-secondary">View Vulnerabilities</a><a href="/reports" class="btn-secondary">Download Reports</a></div></div>';
+  }
+  function showError(msg) {
+    document.getElementById("progressBox").style.display = "none";
+    document.getElementById("resultBox").style.display   = "block";
+    document.getElementById("resultBox").innerHTML = '<div class="result-error"><div class="result-title">Error</div><pre>'+msg+'</pre></div>';
+  }
+</script>
+{% endblock %}

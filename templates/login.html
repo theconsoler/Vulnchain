@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VulnChain -- Login</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #0a0e13;
+    color: #c9d1d9;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+  }
+
+  #particleCanvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+    pointer-events: none;
+    display: block;
+  }
+
+  .nav, .hero, .stats-bar {
+    position: relative;
+    z-index: 2;
+  }
+
+  .nav {
+    display: flex;
+    align-items: center;
+    padding: 0 40px;
+    height: 56px;
+    border-bottom: 1px solid rgba(88,166,255,0.1);
+    background: rgba(10, 14, 19, 0.9);
+    backdrop-filter: blur(12px);
+  }
+  .nav-brand {
+    font-size: 18px;
+    font-weight: 700;
+    color: #58a6ff;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+  .nav-brand span { color: #ff6b35; }
+  .nav-links { margin-left: auto; display: flex; gap: 30px; }
+  .nav-links a {
+    color: #8b949e;
+    text-decoration: none;
+    font-size: 13px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: #58a6ff; }
+
+  .hero {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+  }
+
+  .hero-title {
+    font-size: 42px;
+    font-weight: 700;
+    color: #ffffff;
+    text-align: center;
+    line-height: 1.2;
+    margin-bottom: 12px;
+    letter-spacing: 1px;
+    text-shadow: 0 0 40px rgba(88,166,255,0.4);
+  }
+  .hero-title span { color: #58a6ff; }
+
+  .hero-sub {
+    font-size: 15px;
+    color: #8b949e;
+    text-align: center;
+    margin-bottom: 48px;
+    max-width: 500px;
+  }
+
+  /* 3D floating card */
+  .login-box {
+    width: 100%;
+    max-width: 420px;
+    background: rgba(13, 17, 23, 0.85);
+    border: 1px solid rgba(88, 166, 255, 0.25);
+    border-radius: 14px;
+    padding: 36px;
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    box-shadow:
+      0 0 0 1px rgba(88,166,255,0.05),
+      0 8px 40px rgba(0,0,0,0.7),
+      0 0 100px rgba(88,166,255,0.07),
+      inset 0 1px 0 rgba(255,255,255,0.06);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  .login-box:hover {
+    transform: translateY(-3px);
+    box-shadow:
+      0 0 0 1px rgba(88,166,255,0.2),
+      0 20px 60px rgba(0,0,0,0.8),
+      0 0 140px rgba(88,166,255,0.1),
+      inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+
+  .login-box h2 {
+    font-size: 12px;
+    color: #58a6ff;
+    margin-bottom: 28px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+  }
+
+  /* Error message -- forced hidden until JS shows it */
+  .error-msg {
+    display: none !important;
+    background: rgba(255,45,45,0.12);
+    border: 1px solid rgba(255,45,45,0.3);
+    border-radius: 6px;
+    padding: 10px 14px;
+    color: #FF6B6B;
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+  .error-msg.visible {
+    display: block !important;
+  }
+
+  .form-group { margin-bottom: 20px; }
+  .form-group label {
+    display: block;
+    font-size: 10px;
+    color: #8b949e;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+
+  .input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .form-group input {
+    width: 100%;
+    padding: 12px 14px;
+    background: rgba(22, 27, 34, 0.9);
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    color: #e6edf3;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    font-family: 'Segoe UI', monospace;
+  }
+  .form-group input:focus {
+    border-color: #58a6ff;
+    box-shadow: 0 0 0 3px rgba(88,166,255,0.12);
+  }
+  .form-group input::placeholder { color: #3d444d; }
+
+  /* Extra right padding for eye button */
+  .has-eye { padding-right: 46px !important; }
+
+  /* Eye toggle -- fixed visibility */
+  .eye-toggle {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(88,166,255,0.08);
+    border: 1px solid rgba(88,166,255,0.15);
+    border-radius: 5px;
+    cursor: pointer;
+    color: #8b949e;
+    padding: 5px 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    outline: none;
+    line-height: 1;
+  }
+  .eye-toggle:hover {
+    background: rgba(88,166,255,0.18);
+    border-color: rgba(88,166,255,0.4);
+    color: #58a6ff;
+  }
+  .eye-toggle svg {
+    width: 16px;
+    height: 16px;
+    display: block;
+  }
+
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(88,166,255,0.25), transparent);
+    margin: 20px 0 24px;
+  }
+
+  .btn-login {
+    width: 100%;
+    padding: 13px;
+    background: linear-gradient(135deg, #1a6e2e, #238636);
+    border: 1px solid rgba(46,160,67,0.6);
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    transition: all 0.2s;
+    box-shadow: 0 4px 20px rgba(35,134,54,0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn-login:hover {
+    background: linear-gradient(135deg, #238636, #2ea043);
+    box-shadow: 0 6px 28px rgba(35,134,54,0.4);
+    transform: translateY(-1px);
+  }
+  .btn-login:active { transform: translateY(0); }
+  .btn-login:disabled {
+    background: #161b22;
+    border-color: #21262d;
+    color: #484f58;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+  }
+
+  .login-note {
+    margin-top: 20px;
+    font-size: 11px;
+    color: #3d444d;
+    text-align: center;
+    line-height: 1.7;
+  }
+
+  .stats-bar {
+    display: flex;
+    justify-content: center;
+    gap: 60px;
+    padding: 24px;
+    border-top: 1px solid rgba(88,166,255,0.08);
+    background: rgba(10,14,19,0.9);
+    backdrop-filter: blur(12px);
+  }
+  .stat-item { text-align: center; }
+  .stat-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: #58a6ff;
+    font-family: monospace;
+    text-shadow: 0 0 20px rgba(88,166,255,0.5);
+  }
+  .stat-label {
+    font-size: 9px;
+    color: #3d444d;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-top: 4px;
+  }
+
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.25);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<canvas id="particleCanvas"></canvas>
+
+<nav class="nav">
+  <div class="nav-brand">Vuln<span>Chain</span></div>
+  <div class="nav-links">
+    <a href="#">About</a>
+    <a href="#">Docs</a>
+    <a href="#">GitHub</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <h1 class="hero-title">Attack Path Based<br><span>Vulnerability Intelligence</span></h1>
+  <p class="hero-sub">Graph-based vulnerability prioritization. Patch what matters. Ignore the noise.</p>
+
+  <div class="login-box">
+    <h2>&#9632; Analyst Login</h2>
+
+    <div class="error-msg" id="errorMsg"></div>
+
+    <div class="form-group">
+      <label>Username</label>
+      <div class="input-wrapper">
+        <input type="text" id="username" placeholder="analyst" autocomplete="off" autofocus>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Password</label>
+      <div class="input-wrapper">
+        <input type="password" id="password" placeholder="••••••••••••" class="has-eye">
+        <button class="eye-toggle" id="eyeToggle" onclick="togglePassword()" tabindex="-1" type="button" title="Show/hide password">
+          <svg id="eyeOpen" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+          </svg>
+          <svg id="eyeClosed" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="display:none">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <button class="btn-login" id="loginBtn" onclick="handleLogin()">
+      <span id="btnText">Sign In</span>
+      <div class="spinner" id="spinner"></div>
+    </button>
+
+    <div class="login-note">
+      Access restricted to authorized analysts only.<br>
+      Contact your administrator to request access.
+    </div>
+  </div>
+</div>
+
+<div class="stats-bar">
+  <div class="stat-item">
+    <div class="stat-value">NVD</div>
+    <div class="stat-label">CVE Data Source</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-value">EPSS</div>
+    <div class="stat-label">Exploit Prediction</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-value">Graph</div>
+    <div class="stat-label">Attack Path Engine</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-value">3</div>
+    <div class="stat-label">Scanner Formats</div>
+  </div>
+</div>
+
+<script>
+// ── Particle Network ──────────────────────────────────────────────────────────
+(function() {
+  const canvas = document.getElementById("particleCanvas");
+  const ctx    = canvas.getContext("2d");
+
+  function resize() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener("resize", resize);
+
+  const COUNT    = 75;
+  const MAX_DIST = 140;
+  const particles = [];
+
+  for (let i = 0; i < COUNT; i++) {
+    particles.push({
+      x:  Math.random() * window.innerWidth,
+      y:  Math.random() * window.innerHeight,
+      vx: (Math.random() - 0.5) * 0.45,
+      vy: (Math.random() - 0.5) * 0.45,
+      r:  Math.random() * 1.8 + 0.8,
+    });
+  }
+
+  function frame() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Update and draw particles
+    for (let i = 0; i < particles.length; i++) {
+      const p = particles[i];
+      p.x += p.vx;
+      p.y += p.vy;
+      if (p.x < 0 || p.x > canvas.width)  p.vx *= -1;
+      if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(88,166,255,0.6)";
+      ctx.fill();
+    }
+
+    // Draw connections
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx   = particles[i].x - particles[j].x;
+        const dy   = particles[i].y - particles[j].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < MAX_DIST) {
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.strokeStyle = `rgba(88,166,255,${(1 - dist / MAX_DIST) * 0.3})`;
+          ctx.lineWidth   = 0.7;
+          ctx.stroke();
+        }
+      }
+    }
+
+    requestAnimationFrame(frame);
+  }
+
+  frame();
+})();
+
+
+// ── Eye Toggle ────────────────────────────────────────────────────────────────
+function togglePassword() {
+  const input   = document.getElementById("password");
+  const open    = document.getElementById("eyeOpen");
+  const closed  = document.getElementById("eyeClosed");
+  if (input.type === "password") {
+    input.type         = "text";
+    open.style.display  = "none";
+    closed.style.display= "block";
+  } else {
+    input.type          = "password";
+    open.style.display  = "block";
+    closed.style.display= "none";
+  }
+}
+
+
+// ── Login ─────────────────────────────────────────────────────────────────────
+document.getElementById("username").addEventListener("keydown", e => {
+  if (e.key === "Enter") document.getElementById("password").focus();
+});
+document.getElementById("password").addEventListener("keydown", e => {
+  if (e.key === "Enter") handleLogin();
+});
+
+async function handleLogin() {
+  const username = document.getElementById("username").value.trim();
+  const password = document.getElementById("password").value;
+  const btn      = document.getElementById("loginBtn");
+  const spinner  = document.getElementById("spinner");
+  const btnText  = document.getElementById("btnText");
+
+  if (!username || !password) { showError("Enter your username and password."); return; }
+
+  btn.disabled          = true;
+  btnText.style.display = "none";
+  spinner.style.display = "block";
+  hideError();
+
+  try {
+    const res  = await fetch("/login", {
+      method:  "POST",
+      headers: {"Content-Type": "application/json"},
+      body:    JSON.stringify({username, password}),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      window.location.href = data.redirect || "/dashboard";
+    } else {
+      showError(data.error || "Authentication failed.");
+    }
+  } catch {
+    showError("Connection error. Try again.");
+  } finally {
+    btn.disabled          = false;
+    btnText.style.display = "block";
+    spinner.style.display = "none";
+  }
+}
+
+function showError(msg) {
+  const el = document.getElementById("errorMsg");
+  el.textContent = msg;
+  el.classList.add("visible");
+}
+function hideError() {
+  document.getElementById("errorMsg").classList.remove("visible");
+}
+</script>
+</body>
+</html>

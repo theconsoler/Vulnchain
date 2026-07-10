@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Overview{% endblock %}
+{% block page_title %}Security Overview{% endblock %}
+{% block content %}
+<div class="cards-grid" id="statsGrid">
+  <div class="card">
+    <div class="card-value" id="totalNodes">--</div>
+    <div class="card-label">Hosts Scanned</div>
+  </div>
+  <div class="card card-danger">
+    <div class="card-value" id="exploitNodes">--</div>
+    <div class="card-label">Hosts with Active Exploit</div>
+  </div>
+  <div class="card card-warning">
+    <div class="card-value" id="highEpss">--</div>
+    <div class="card-label">High EPSS Vulns</div>
+  </div>
+  <div class="card">
+    <div class="card-value" id="pathCount">--</div>
+    <div class="card-label">Attack Paths Found</div>
+  </div>
+</div>
+
+<div class="section-header">Recent Scans</div>
+<table class="data-table">
+  <thead><tr><th>Time</th><th>File</th><th>Scanner</th><th>Hosts</th><th>Vulns</th><th>Status</th></tr></thead>
+  <tbody>
+    {% for scan in recent_scans %}
+    <tr>
+      <td class="mono">{{ scan.created_at }}</td>
+      <td>{{ scan.filename }}</td>
+      <td><span class="badge badge-info">{{ scan.scanner_type }}</span></td>
+      <td>{{ scan.node_count }}</td>
+      <td>{{ scan.vuln_count }}</td>
+      <td>{% if scan.status == 'success' %}<span class="badge badge-low">SUCCESS</span>{% else %}<span class="badge badge-critical">ERROR</span>{% endif %}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="6" style="text-align:center;color:#484f58;padding:30px;">
+      No scans yet. <a href="/upload" style="color:#58a6ff;">Upload a scanner file</a> to begin.
+    </td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<div id="deltaSection" style="margin-top:30px;display:none;">
+  <div class="section-header">Scan Delta -- vs Previous Scan</div>
+  <div class="cards-grid" style="grid-template-columns:repeat(3,1fr);">
+    <div class="card card-danger">
+      <div class="card-value" id="newCount">--</div>
+      <div class="card-label">New Vulnerabilities</div>
+    </div>
+    <div class="card" style="border-color:rgba(144,238,144,0.3);">
+      <div class="card-value" style="color:#90EE90;" id="resolvedCount">--</div>
+      <div class="card-label">Resolved Since Last Scan</div>
+    </div>
+    <div class="card">
+      <div class="card-value" id="unchangedCount">--</div>
+      <div class="card-label">Unchanged</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  fetch("/api/stats")
+    .then(r=>r.json())
+    .then(d=>{
+      document.getElementById("totalNodes").textContent   = d.total_nodes        ?? "--";
+      document.getElementById("exploitNodes").textContent = d.nodes_with_exploit ?? "--";
+      document.getElementById("highEpss").textContent     = d.vulns_high_epss    ?? "--";
+      document.getElementById("pathCount").textContent    = d.attack_path_count  ?? "--";
+    }).catch(()=>{});
+
+  fetch("/api/delta")
+    .then(r=>r.json())
+    .then(d=>{
+      if(!d.delta_available) return;
+      document.getElementById("deltaSection").style.display = "block";
+      document.getElementById("newCount").textContent       = d.new_count;
+      document.getElementById("resolvedCount").textContent  = d.resolved_count;
+      document.getElementById("unchangedCount").textContent = d.unchanged_count;
+    }).catch(()=>{});
+</script>
+{% endblock %}

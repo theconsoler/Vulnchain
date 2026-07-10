@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Attack Graph{% endblock %}
+{% block page_title %}Interactive Attack Graph{% endblock %}
+{% block content %}
+{% if graph_exists %}
+<iframe src="/output/attack_graph.html"
+        style="width:100%;height:calc(100vh - 120px);border:none;border-radius:8px;background:#0d1117;">
+</iframe>
+{% else %}
+<div class="empty-state">
+  <div class="empty-icon">&#9903;</div>
+  <div class="empty-title">No Graph Available</div>
+  <div class="empty-sub">Run a scan to generate the attack graph visualization.</div>
+  <a href="/upload" class="btn-primary">Upload Scanner File</a>
+</div>
+{% endif %}
+{% endblock %}
