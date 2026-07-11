@@ -259,7 +259,7 @@ pytest tests/ -v
 ## Author
 
 **Piyush Kumar Sahoo** (theconsoler)
-B.Tech Computer Science and Engineering (Cyber Security) -- Sri Sri University
+B.Tech Computer Science and Engineering (Cyber Security) -- Sri Sri University Graduate
 
 [![GitHub](https://img.shields.io/badge/GitHub-theconsoler-black?style=flat-square&logo=github)](https://github.com/theconsoler)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-piyush--kumar--sahoo--soc-blue?style=flat-square&logo=linkedin)](https://linkedin.com/in/piyush-kumar-sahoo-soc)
