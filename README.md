@@ -1,6 +1,5 @@
 <div align="center">
 
-
 ```
 ██╗   ██╗██╗   ██╗██╗     ███╗   ██╗ ██████╗██╗  ██╗ █████╗ ██╗███╗   ██╗
 ██║   ██║██║   ██║██║     ████╗  ██║██╔════╝██║  ██║██╔══██╗██║████╗  ██║
@@ -12,13 +11,14 @@
 
 **Attack Path Based Vulnerability Prioritization Engine**
 
-![Python](https://img.shields.io/badge/Python-3.11-blue?style=flat-square&logo=python)
-![Platform](https://img.shields.io/badge/Platform-Ubuntu%2022.04-orange?style=flat-square&logo=ubuntu)
-![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
-![Status](https://img.shields.io/badge/Status-Active%20Development-brightgreen?style=flat-square)
-![Tests](https://img.shields.io/badge/Tests-60%20Passing-success?style=flat-square)
-![Flask](https://img.shields.io/badge/Flask-3.0-lightgrey?style=flat-square&logo=flask)
-![NetworkX](https://img.shields.io/badge/Graph-NetworkX-blue?style=flat-square)
+![Python](https://img.shields.io/badge/python-3.11-blue)
+![Platform](https://img.shields.io/badge/platform-Ubuntu%2022.04-orange)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Status](https://img.shields.io/badge/status-active-brightgreen)
+![Tests](https://img.shields.io/badge/tests-60%20passed-success)
+![Flask](https://img.shields.io/badge/flask-3.0-black)
+![NetworkX](https://img.shields.io/badge/networkx-3.3-lightgrey)
+![Docker](https://img.shields.io/badge/docker-ready-2496ED)
 
 *Ranks CVEs by actual attack path impact, not CVSS score*
 
@@ -62,6 +62,9 @@ Scanner Output (.nessus / .xml / .csv)
         v
 [Phase 6] Dashboard ──── Flask web UI with bcrypt auth, JWT sessions,
           background pipeline, real-time progress, scan delta comparison
+        |
+        v
+[Phase 9] Docker ─────── Full stack, one command, any OS
 ```
 
 ---
@@ -98,6 +101,7 @@ final_score        = base_score × exploit_multiplier × centrality_mult
 | Authentication | bcrypt + JWT | Secure session management |
 | Rate Limiting | Flask-Limiter | Brute force protection |
 | Database | SQLite | User and job storage |
+| Containerization | Docker + Docker Compose | One-command deployment |
 | Testing | pytest | 60 unit tests |
 
 ---
@@ -114,12 +118,70 @@ final_score        = base_score × exploit_multiplier × centrality_mult
 
 ## Installation
 
-### Requirements
+There are two ways to run VulnChain. Docker is the fastest and doesn't
+require installing Python, system libraries, or managing a virtual
+environment on your host machine.
+
+### Option A: Docker (Recommended)
+
+**Requirements:** Docker Engine + Docker Compose plugin only.
+
+```bash
+# Clone the repository
+git clone https://github.com/theconsoler/Vulnchain.git
+cd Vulnchain
+
+# Configure environment
+cp .env.example .env
+nano .env
+# Fill in SECRET_KEY, JWT_SECRET_KEY, and optionally NVD_API_KEY
+
+# Build and start
+docker compose up -d
+```
+
+Open `http://localhost:5000` in your browser.
+
+#### Default Login Credentials
+
+On first startup, Docker automatically creates a default user so you can
+log in immediately:
+
+| Field | Value |
+|---|---|
+| Username | `analyst` |
+| Password | `ChangeMe123` |
+
+> ⚠️ **Change this immediately after first login.** This default exists
+> only to get you into the dashboard on first run -- it is not meant for
+> ongoing use, and anyone who deploys this image with the default `.env`
+> values will have the same credentials.
+
+To change the password:
+
+```bash
+docker exec -it vulnchain python create_user.py --username analyst --password YourNewPassword
+```
+
+To set different credentials from the start instead of the default,
+edit `VULNCHAIN_USER` and `VULNCHAIN_PASSWORD` in your `.env` file
+**before** running `docker compose up`.
+
+Useful commands:
+
+```bash
+docker compose logs -f      # View logs
+docker compose ps           # Check status
+docker compose down         # Stop (keeps data)
+docker compose down -v      # Stop and wipe all data
+```
+
+### Option B: Manual Setup
+
+**Requirements:**
 - Ubuntu 22.04 LTS
 - Python 3.11
 - 2GB RAM minimum
-
-### Setup
 
 ```bash
 # Clone the repository
@@ -217,6 +279,9 @@ vulnchain/
 ├── tests/                  60 pytest unit tests
 ├── samples/                Sample scanner files for testing
 ├── output/                 Generated reports (gitignored)
+├── Dockerfile               Docker image definition
+├── docker-compose.yml       Docker Compose orchestration
+├── entrypoint.sh             Container startup script
 ├── main.py                 Phase 1 CLI entry point
 ├── build_graph.py          Phase 2 CLI entry point
 ├── enrich_graph.py         Phase 3 CLI entry point
@@ -253,24 +318,26 @@ pytest tests/ -v
 - Login rate-limited to 5 attempts per minute per IP
 - Secret keys loaded from environment only -- app refuses to start without them
 - Uploaded files saved with UUID filenames, deleted after pipeline completes
+- Default Docker credentials (`analyst` / `ChangeMe123`) are intended for
+  first login only -- see the Docker section above for how to change them
 
 ---
 
 ## Author
 
 **Piyush Kumar Sahoo** (theconsoler)
-B.Tech Computer Science and Engineering (Cyber Security) -- Sri Sri University Graduate
+B.Tech Computer Science and Engineering (Cyber Security) -- Sri Sri University
 
-[![GitHub](https://img.shields.io/badge/GitHub-theconsoler-black?style=flat-square&logo=github)](https://github.com/theconsoler)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-piyush--kumar--sahoo--soc-blue?style=flat-square&logo=linkedin)](https://linkedin.com/in/piyush-kumar-sahoo-soc)
-[![YouTube](https://img.shields.io/badge/YouTube-blue__trace--19-red?style=flat-square&logo=youtube)](https://youtube.com/@blue_trace-19)
-[![Medium](https://img.shields.io/badge/Medium-the__consoler__-black?style=flat-square&logo=medium)](https://medium.com/@the_consoler_)
+![GitHub](https://github.com/theconsoler)
+![LinkedIn](https://linkedin.com/in/piyush-kumar-sahoo-soc)
+![YouTube](https://youtube.com/@blue_trace-19)
+![Medium](https://medium.com/@the_consoler_)
 
 ---
 
 ## License
 
-MIT License -- see [LICENSE](LICENSE) for details.
+MIT License -- see LICENSE for details.
 
 ---
 
