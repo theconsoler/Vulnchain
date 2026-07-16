@@ -1,0 +1,39 @@
+services:
+  vulnchain:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vulnchain
+    ports:
+      - "5000:5000"
+    environment:
+      # Required -- generate with: python3 -c "import secrets; print(secrets.token_hex(32))"
+      - SECRET_KEY=${SECRET_KEY}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      # Optional -- get free key at https://nvd.nist.gov/developers/request-an-api-key
+      - NVD_API_KEY=${NVD_API_KEY:-}
+      # Default user created on first start (change these)
+      - VULNCHAIN_USER=${VULNCHAIN_USER:-analyst}
+      - VULNCHAIN_PASSWORD=${VULNCHAIN_PASSWORD:-ChangeMe123}
+    volumes:
+      # Persist generated outputs between container restarts
+      - vulnchain_output:/app/output
+      # Persist NVD and EPSS cache (avoids re-fetching on restart)
+      - vulnchain_cache:/app/cache
+      # Persist SQLite database (users, scan history)
+      - vulnchain_db:/app/vulnchain_data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/login"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  vulnchain_output:
+    driver: local
+  vulnchain_cache:
+    driver: local
+  vulnchain_db:
+    driver: local
